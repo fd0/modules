@@ -1,0 +1,148 @@
+Introduction to Go Modules
+6 Jun 2019
+
+Alexander Neumann
+alexander@bumpern.de
+https://github.com/fd0
+
+* Warum?
+
+: Bisher haben sich Compile/Toolchain nicht gekümmert
+: Es gab den GOPATH, dort lag der ganze Quelltext
+: Aber wie er dahin gekommen ist hat die Toolchain nicht gekümmert
+: Toolchain: `go` Kommando
+: Heute Abend Vorstellung Go Modules, dann Tutorial wie man die benutzt
+
+* Vorher: GOPATH
+
+    $ export GOPATH=/tmp/go
+    $ go get github.com/zchee/color
+    $ tree $GOPATH
+    /tmp/go
+    ├── pkg
+    │   └── linux_amd64
+    │       └── github.com
+    │           └── zchee
+    │               └── color.a
+    └── src
+        ├── github.com
+        │   └── zchee
+        │       └── color
+        │           ├── attribute.go
+        │           ├── attribute_name.go
+        │           ├── attribute_test.go
+        ⋮
+        └── golang.org
+            └── x
+                └── sys
+                    ⋮
+    
+    33 directories, 467 files
+
+: Umgebungsvariable GOPATH gibt an, wo das liegt (default ~/go)
+: 'go get' legt da Quelltext hin, inklusive Dependencies
+: Wenn da schon was liegt, wirds nicht aktualisiert (außer bei 'go get -u')
+: Keine Möglichkeit, die Version oder den Commit anzugeben
+: -> Konflikte vorprogrammiert
+: Lösung bisher: alle dependencies nach vendor/
+
+* Verwendung
+
+.code demo1/main.go
+
+Quelltext für Bibliothek
+⇒ `$GOPATH/src/github.com/zchee/color`
+
+* Ausführen
+
+    $ go build
+    $ ./demo1
+    Hello Gophers!
+
+: Demo ausführen
+: cd demo1
+: go build && ./demo1
+
+* Nervig
+
+   $ unset GOPATH
+   $ go build
+   main.go:3:8: cannot find package "github.com/zchee/color" in any of:
+   /usr/lib/go/src/github.com/zchee/color (from $GOROOT)
+   /home/fd0/go/src/github.com/zchee/color (from $GOPATH)
+
+: unset GOPATH
+: go build
+: Projekte bauen nicht direkt aus dem Checkout eines Repos
+
+* Go Modules
+
+- Modul == Repository (meistens)
+- Neue Dateien: `go.mod` und `go.sum`
+- Mehr Sicherheit (Module Proxy, Hash-Datenbank)
+- Semantic Versioning (`MAJOR.MINOR.PATCH`) forciert
+- Semantic Import Versioning (dazu später mehr)
+- Reproducible Builds
+- Minimum Version Selection
+- Vendoring geht immer noch (aber nur für `package main`)
+
+: Einheit für Quelltext
+: Eingeführt in Go 1.11, standardmäßig aktiv außerhalb von GOPATH
+: SIV: Wenns gleich heißt, ists kompatibel
+
+* Verwendung (Modules)
+
+    $ unset GOPATH
+
+    $ go mod init github.com/fd0/demo2
+    go: creating new go.mod: module github.com/fd0/demo2
+
+    $ time go build
+    go: finding github.com/zchee/color v1.7.0
+    go: downloading github.com/zchee/color v1.7.0
+    go: extracting github.com/zchee/color v1.7.0
+    go: finding github.com/mattn/go-isatty v0.0.8
+    go: finding github.com/mattn/go-colorable v0.1.2
+    go: downloading github.com/mattn/go-isatty v0.0.8
+    go: extracting github.com/mattn/go-isatty v0.0.8
+    go: downloading github.com/mattn/go-colorable v0.1.2
+    go: extracting github.com/mattn/go-colorable v0.1.2
+
+    go build  3,49s user 0,64s system 58% cpu 7,096 total
+
+* Neue Dateien
+
+`go.mod`:
+.code demo2/go.mod
+
+`go.sum`:
+.code demo2/go.sum
+
+: Achtung: die Library die wir wollten ist v1, da gibts auch v2 von
+: Leider ist das gerade defekt.
+
+* Zentrale Dienste
+
+ * Module Proxy
+ * Sum DB
+
+* Stuff
+
+: Commands:
+: * go list -m all
+: * go list -m -versions URL
+: * go get -u
+: * go get URL@master
+: * go mod init
+: * go mod tidy
+: * go mod vendor
+: * go build -mod=vendor
+: * go clean -modcache
+
+* Referenzen
+
+[[https://blog.golang.org/using-go-modules]]
+[[https://www.melvinvivas.com/go-version-1-11-modules/]]
+[[https://roberto.selbach.ca/intro-to-go-modules/]]
+[[https://ukiahsmith.com/blog/a-gentle-introduction-to-golang-modules/]]
+[[https://jimmyislive.dev/posts/gomodules/]]
